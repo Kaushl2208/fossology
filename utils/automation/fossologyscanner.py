@@ -11,6 +11,7 @@ import json
 import os
 import sys
 import textwrap
+import logging
 from typing import List, Union, IO
 
 from FoScanner.ApiConfig import (ApiConfig, Runner)
@@ -67,16 +68,23 @@ def get_api_config() -> ApiConfig:
   return api_config
 
 
-def get_allow_list() -> dict:
+def get_allow_list(path: str = '') -> dict:
   """
   Decode json from `allowlist.json`
 
+  :param: path: path to allowlist file. Default=''
   :return: allowlist dictionary
   """
-  if os.path.exists('whitelist.json'):
-    file_name = 'whitelist.json'
+  if path == '':
+    if os.path.exists('whitelist.json'):
+      file_name = 'whitelist.json'
+      print("Reading whitelist.json file...")
+      logging.warning("Name 'whitelist.json' is deprecated. Please use 'allowlist.json instead'")
+    else:
+      file_name = 'allowlist.json'
+      print("Reading allowlist.json file...")
   else:
-    file_name = 'allowlist.json'
+    file_name = path
   with open(file_name) as f:
     data = json.load(f)
   return data
@@ -231,9 +239,13 @@ def main(parsed_args):
   api_config = get_api_config()
   cli_options = CliOptions()
   cli_options.update_args(parsed_args)
-
   try:
-    cli_options.allowlist = get_allow_list()
+    if cli_options.allowlist_path:
+      allowlist_path = cli_options.allowlist_path
+      print(f"Reading allowlist.json file from the path: '{allowlist_path}'")
+      cli_options.allowlist = get_allow_list(path=allowlist_path)
+    else:
+      cli_options.allowlist = get_allow_list()
   except FileNotFoundError:
     print("Unable to find allowlist.json in current dir\n"
           "Continuing without it.", file=sys.stderr)
@@ -268,6 +280,9 @@ if __name__ == "__main__":
   parser.add_argument(
     "--report", type=str, help="Type of report to generate. Default 'TEXT'.",
     choices=[member.name for member in ReportFormat], default=ReportFormat.TEXT.name
+  )
+  parser.add_argument(
+    "--allowlist-path", type=str, help="Pass allowlist.json to allowlist dependencies."
   )
   args = parser.parse_args()
   sys.exit(main(args))

@@ -11,16 +11,37 @@ jobs:
   check-license:
     name: Check license
     runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v3
-      - run: |
+      - name: Checkout this repository
+        uses: actions/checkout@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Run Scanners (excluding allowlisted)
+        if: ${{ vars.ALLOWLIST_PATH != '' }}
+        run: |
+          docker run --rm --name "fossologyscanner" -w "/opt/repo" -v ${PWD}:/opt/repo \
+            -v ${{ github.workspace }}/${{ inputs.allowlist_file_path }}:/bin/${{ inputs.allowlist_file_path }}
+            -e GITHUB_TOKEN=${{ github.token }} \
+            -e GITHUB_PULL_REQUEST=${{ github.event.number }} \
+            -e GITHUB_REPOSITORY=${{ github.repository }} \
+            -e GITHUB_API=${{ github.api_url }} \
+            -e GITHUB_REPO_URL=${{ github.repositoryUrl }} \
+            -e GITHUB_REPO_OWNER=${{ github.repository_owner }} \
+            -e GITHUB_ACTIONS \
+            fossology/fossology:scanner "/bin/fossologyscanner" nomos ojo \
+            --allowlist-path ${{ vars.ALLOWLIST_PATH }}
+      
+      - name: Run Scanners
+        if: ${{ vars.ALLOWLIST_PATH == '' }}
+        run: |
           docker run --rm --name "fossologyscanner" -w "/opt/repo" -v ${PWD}:/opt/repo \
             -e GITHUB_TOKEN=${{ github.token }} \
             -e GITHUB_PULL_REQUEST=${{ github.event.number }} \
             -e GITHUB_REPOSITORY=${{ github.repository }} \
+            -e GITHUB_API=${{ github.api_url }} \
             -e GITHUB_REPO_URL=${{ github.repositoryUrl }} \
             -e GITHUB_REPO_OWNER=${{ github.repository_owner }} \
-            -e GITHUB_API=${{ github.api_url }} \
             -e GITHUB_ACTIONS \
             fossology/fossology:scanner "/bin/fossologyscanner" nomos ojo
 
@@ -28,8 +49,29 @@ jobs:
     name: Check copyright
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
-      - run: |
+      - name: Checkout this repository
+        uses: actions/checkout@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Run Scanners
+        if: ${{ vars.ALLOWLIST_PATH != '' }}
+        run: |
+          docker run --rm --name "fossologyscanner" -w "/opt/repo" -v ${PWD}:/opt/repo \
+            -e GITHUB_TOKEN=${{ github.token }} \
+            -e GITHUB_PULL_REQUEST=${{ github.event.number }} \
+            -e GITHUB_REPOSITORY=${{ github.repository }} \
+            -e GITHUB_API=${{ github.api_url }} \
+            -e GITHUB_REPO_URL=${{ github.repositoryUrl }} \
+            -e GITHUB_REPO_OWNER=${{ github.repository_owner }} \
+            -e GITHUB_ACTIONS \
+            fossology/fossology:scanner "/bin/fossologyscanner" copyright keyword \
+            --allowlist-path ${{ vars.ALLOWLIST_PATH }}
+
+      - name: Run Scanners
+        if: ${{ vars.ALLOWLIST_PATH == '' }}
+        run: |
           docker run --rm --name "fossologyscanner" -w "/opt/repo" -v ${PWD}:/opt/repo \
             -e GITHUB_TOKEN=${{ github.token }} \
             -e GITHUB_PULL_REQUEST=${{ github.event.number }} \

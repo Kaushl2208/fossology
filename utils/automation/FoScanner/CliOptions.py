@@ -40,6 +40,7 @@ class CliOptions(object):
   keyword: bool = False
   repo: bool = False
   diff_dir: str = os.getcwd()
+  allowlist_path: str = None
   allowlist: dict[str, list[str]] = {
     'licenses': [],
     'exclude': []
@@ -62,6 +63,8 @@ class CliOptions(object):
       self.ojo = True
     if "repo" in args.operation:
       self.repo = True
+    if args.allowlist_path:
+      self.allowlist_path = args.allowlist_path
     if self.nomos is False and self.ojo is False and self.copyright is False \
         and self.keyword is False:
       self.nomos = True
