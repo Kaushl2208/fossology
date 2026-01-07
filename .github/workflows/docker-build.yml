@@ -10,8 +10,6 @@ concurrency:
 
 on:
   push:
-    branches:
-      - master
   release:
     types:
       - published
@@ -32,22 +30,23 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v4
 
-    - name: Login to DockerHub
+    - name: Login to GitHub Container Registry
       uses: docker/login-action@v4
       with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Set build version
       run: |
         VERSION_PATTERN='([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)(-?rc[[:digit:]]+)?-?([[:digit:]]*)-?[[:alnum:]]*'
         echo VERSION=$(git describe --tags > /dev/null 2>&1 && git describe --tags | head -1 | sed -re "s/${VERSION_PATTERN}/\\1.\\3\\2/" | sed -re 's/\.$/.0/') >> $GITHUB_ENV
-
+        echo OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]') >> $GITHUB_ENV
     - name: Build and push main image
       uses: docker/build-push-action@v7
       with:
         push: true
-        tags: fossology/fossology:latest
+        tags: ghcr.io/${{ env.OWNER }}/fossology:latest
         context: .
         cache-from: type=gha
         cache-to: type=gha,mode=max
@@ -58,7 +57,7 @@ jobs:
       uses: docker/build-push-action@v7
       with:
         push: true
-        tags: fossology/fossology:scanner
+        tags: ghcr.io/${{ env.OWNER }}/fossology:scanner
         file: utils/automation/Dockerfile.ci
         cache-from: type=gha
         cache-to: type=gha,mode=max
