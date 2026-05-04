@@ -506,7 +506,7 @@ function insertInToLicenseRefTableUsingJson($tableName)
   ];
 
   $jsonData = json_decode(file_get_contents("$LIBEXECDIR/licenseRef.json"), true);
-  $statementName = __METHOD__.'.insertInTo'.$tableName;
+  $statementName = __METHOD__.'.insertInTo'.$tableName . '.' . uniqid();
   foreach($jsonData as $licenseArray) {
     foreach ($keysToReplicate as $duplicateKey => $originalKey) {
       if ($licenseArray['rf_spdx_compatible'] == 't') {
